@@ -82,18 +82,18 @@ import math
 import sys
 
 class PrivateKey(object):
-	def __init__(self, p=None, g=None, x=None, iNumBits=0):
-		self.p = p
-		self.g = g
-		self.x = x
-		self.iNumBits = iNumBits
+	def __init__(self, r=[None,None,None,0]):
+		self.p = r[0]
+		self.g = r[1]
+		self.x = r[2]
+		self.iNumBits = r[3]
 
 class PublicKey(object):
-	def __init__(self, p=None, g=None, h=None, iNumBits=0):
-		self.p = p
-		self.g = g
-		self.h = h
-		self.iNumBits = iNumBits
+	def __init__(self, r=[None,None,None,0]):
+		self.p = r[0]
+		self.g = r[1]
+		self.h = r[2]
+		self.iNumBits = r[3]
 
 # computes the greatest common denominator of a and b.  assumes a > b
 def gcd( a, b ):
@@ -286,6 +286,25 @@ def decode(aiPlaintext, iNumBits):
 
 		return decodedText
 
+#formatting the key to use it everywhere
+def save_key(arr, txt):
+        length = 40
+        key = '-'*8+'BEGIN ELGMAL %s KEY'%txt.upper()+'-'*8 + '\n'
+        tmp = '/'
+        for i in arr: tmp = tmp + hex(i)[2:] + '/'
+        strings = (tmp[0+i:length+i] for i in range(0, len(tmp), length))
+        for i in strings: key = key + i + '\n'
+        key = key + '-'*9+'END ELGMAL %s KEY'%txt.upper()+'-'*9
+        open('%s.elg'%txt.lower(), 'w').write(key)
+
+#formatting the key to use it everywhere
+def load_key(txt):
+        key = open(txt, 'r').read()
+        key = key.replace('\n','').split('/')
+        if 'ELGMAL PRIVATE' in key[0]: return PrivateKey([int(i,16) for i in key[1:-1]])
+        elif 'ELGMAL PUBLIC' in key[0]: return PublicKey([int(i,16) for i in key[1:-1]])
+        else: return 'Error in file formation'
+
 #generates public key K1 (p, g, h) and private key K2 (p, g, x)
 def generate_keys(iNumBits=256, iConfidence=32):
 		#p is the prime
@@ -298,8 +317,11 @@ def generate_keys(iNumBits=256, iConfidence=32):
 		x = random.randint( 1, (p - 1) // 2 )
 		h = modexp( g, x, p )
 
-		publicKey = PublicKey(p, g, h, iNumBits)
-		privateKey = PrivateKey(p, g, x, iNumBits)
+		save_key([p,g,h,iNumBits],'public')
+		save_key([p,g,x,iNumBits],'private')
+
+		publicKey = PublicKey([p, g, h, iNumBits])
+		privateKey = PrivateKey([p, g, x, iNumBits])
 
 		return {'privateKey': privateKey, 'publicKey': publicKey}
 
@@ -359,12 +381,15 @@ def decrypt(key, cipher):
 def test():
 		assert (sys.version_info >= (3,4))
 		keys = generate_keys()
-		priv = keys['privateKey']
-		pub = keys['publicKey']
+		#priv = keys['privateKey']
+		#pub = keys['publicKey']
+		priv=load_key('private.elg')
+		pub=load_key('public.elg')
+		
 		message = "My name is Ryan.  Here is some french text:  Maître Corbeau, sur un arbre perché.  Now some Chinese: 鋈 晛桼桾 枲柊氠 藶藽 歾炂盵 犈犆犅 壾, 軹軦軵 寁崏庲 摮 蟼襛 蝩覤 蜭蜸覟 駽髾髽 忷扴汥 "
 		cipher = encrypt(pub, message)
 		plain = decrypt(priv, cipher)
 
 		return message == plain
 
-
+test()
