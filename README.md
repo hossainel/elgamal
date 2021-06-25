@@ -43,6 +43,11 @@ To decrypt the cipher text do
 	plaintext = elgamal.decrypt(privateKey, cipher)
 	#returns the message passed to elgamal.encrypt()
 
+	
+To load the key file do
+
+	key = load_file('filename.elg')
+
 Compatibility: Python 3.4.  Does not work in python 2.7!
 
 License: MIT
